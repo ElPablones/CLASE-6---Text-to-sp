@@ -24,11 +24,11 @@ with st.sidebar:
     # Imagen / GIF psicodélico en el sidebar
     try:
         image = Image.open('psicodelico.gif')
-        st.image(image, caption="Visualizador de Frecuencia", use_container_width=True)
+        st.image(image, caption="", use_container_width=True)
     except Exception:
         try:
             image = Image.open('gato_raton.png')
-            st.image(image, caption="Visualizador", use_container_width=True)
+            st.image(image, caption="Creac. de Interfaces Multimodales. 2026-II", use_container_width=True)
         except Exception:
             st.info("Coloca 'psicodelico.gif' en tu repo para ver el visualizador.")
 
