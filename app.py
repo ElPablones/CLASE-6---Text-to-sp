@@ -5,10 +5,11 @@ import glob
 from gtts import gTTS
 from PIL import Image
 import base64
+from deep_translator import GoogleTranslator
 
 # Configuración de página e interfaz
 st.set_page_config(
-    page_title="Voz & Relato | TTS Studio",
+    page_title="VocalStudio | Traductor & TTS Multimodal",
     page_icon="🎙️",
     layout="wide"
 )
@@ -23,11 +24,11 @@ with st.sidebar:
     # Imagen / GIF psicodélico en el sidebar
     try:
         image = Image.open('psicodelico.gif')
-        st.image(image, caption="Soundwave Visualizer", use_container_width=True)
+        st.image(image, caption="Visualizador de Frecuencia", use_container_width=True)
     except Exception:
         try:
             image = Image.open('gato_raton.png')
-            st.image(image, caption="Interfaces Multimodales", use_container_width=True)
+            st.image(image, caption="Visualizador", use_container_width=True)
         except Exception:
             st.info("Coloca 'psicodelico.gif' en tu repo para ver el visualizador.")
 
@@ -35,7 +36,7 @@ with st.sidebar:
     st.subheader("🌐 Configuración de Voz")
     
     option_lang = st.selectbox(
-        "Selecciona el idioma",
+        "Idioma para la síntesis de voz",
         ("Español", "English")
     )
     lg = 'es' if option_lang == "Español" else 'en'
@@ -43,59 +44,84 @@ with st.sidebar:
     velocidad = st.toggle("Modo Lectura Lenta", value=False)
     
     st.markdown("---")
-    st.caption("🎧 *Transforma cualquier narrativa en una experiencia sonora.*")
+    st.caption("🎧 *Laboratorio multimodal de traducción y síntesis sonora.*")
 
 # ----------------- CUERPO PRINCIPAL -----------------
-st.title("🎙️ Laboratorio de Síntesis Vocal Multimodal")
-st.markdown("> *Explora cómo el texto cobra vida a través de la síntesis de voz en tiempo real.*")
+st.title("🌐 Estudio de Traducción y Síntesis Vocal")
+st.markdown("> *Escribe tu texto, tradúcelo en tiempo real si lo deseas y genera la locución al instante.*")
 
-# Fábula de Kafka predefinida
-fabula_kafka = (
-    "¡Ay! -dijo el ratón-. El mundo se hace cada día más pequeño. "
-    "Al principio era tan grande que le tenía miedo. Corría y corría y por cierto "
-    "que me alegraba ver esos muros, a diestra y siniestra, en la distancia. "
-    "Pero esas paredes se estrechan tan rápido que me encuentro en el último cuarto "
-    "y ahí en el rincón está la trampa sobre la cual debo pasar. "
-    "Todo lo que debes hacer es cambiar de rumbo dijo el gato... y se lo comió.\n\n"
-    "— Franz Kafka."
-)
+# Inicializar variables de estado para el traductor
+if "texto_origen" not in st.session_state:
+    st.session_state["texto_origen"] = ""
+if "texto_traducido" not in st.session_state:
+    st.session_state["texto_traducido"] = ""
 
-# Pestañas para organizar la experiencia
-tab_fabula, tab_editor = st.tabs(["📖 Relato: Pequeña Fábula", "✍️ Estudio de Escritura"])
+# ----------------- SECCIÓN DE TRADUCCIÓN -----------------
+col_in, col_mid, col_out = st.columns([1.2, 0.4, 1.2])
 
-with tab_fabula:
-    col_card, col_meta = st.columns([2.5, 1])
-    
-    with col_card:
-        st.info(fabula_kafka, icon="🐭")
-    
-    with col_meta:
-        st.metric(label="Autor", value="Franz Kafka")
-        st.metric(label="Palabras", value=len(fabula_kafka.split()))
-        cargar_fabula = st.button("📥 Cargar en el sintetizador", use_container_width=True)
-
-with tab_editor:
-    st.markdown("##### Escribe o personaliza el texto a narrar:")
-    texto_inicial = fabula_kafka if cargar_fabula else ""
-    text = st.text_area(
-        "Caja de texto",
-        value=texto_inicial,
+with col_in:
+    st.subheader("📝 Texto de Entrada")
+    texto_input = st.text_area(
+        "Ingresa el mensaje original:",
+        value=st.session_state["texto_origen"],
         height=180,
-        placeholder="Escribe o pega aquí la historia que deseas convertir a audio..."
+        placeholder="Escribe lo que quieras traducir o narrar..."
+    )
+    # Actualizar estado
+    st.session_state["texto_origen"] = texto_input
+
+with col_mid:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    dir_traduccion = st.radio(
+        "Dirección:",
+        ("ES ➔ EN", "EN ➔ ES"),
+        label_visibility="collapsed"
     )
     
-    # Métricas dinámicas en tiempo real
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Caracteres", len(text))
-    c2.metric("Palabras", len(text.split()))
-    c3.metric("Tiempo estimado de lectura", f"{round(len(text.split()) / 2.5)} seg" if text else "0 seg")
+    if st.button("🔄 Traducir", use_container_width=True, type="secondary"):
+        if texto_input.strip():
+            src_lang = 'es' if dir_traduccion == "ES ➔ EN" else 'en'
+            target_lang = 'en' if dir_traduccion == "ES ➔ EN" else 'es'
+            try:
+                with st.spinner("Traduciendo..."):
+                    traduccion = GoogleTranslator(source=src_lang, target=target_lang).translate(texto_input)
+                    st.session_state["texto_traducido"] = traduccion
+            except Exception as e:
+                st.error("No se pudo completar la traducción. Verifica tu conexión.")
+        else:
+            st.warning("Escribe algo primero.")
+
+with col_out:
+    st.subheader("🌍 Texto Traducido")
+    st.text_area(
+        "Resultado de la traducción:",
+        value=st.session_state["texto_traducido"],
+        height=180,
+        disabled=True
+    )
+
+# Selector de qué texto usar para sintetizar
+st.markdown("---")
+st.subheader("🎙️ Síntesis de Voz")
+
+opcion_audio = st.radio(
+    "¿Qué texto deseas convertir a voz?",
+    ("Texto de Entrada", "Texto Traducido"),
+    horizontal=True
+)
+
+texto_a_narrar = st.session_state["texto_origen"] if opcion_audio == "Texto de Entrada" else st.session_state["texto_traducido"]
+
+# Métricas rápidas
+c1, c2, c3 = st.columns(3)
+c1.metric("Caracteres", len(texto_a_narrar))
+c2.metric("Palabras", len(texto_a_narrar.split()))
+c3.metric("Tiempo estimado", f"{round(len(texto_a_narrar.split()) / 2.5)} seg" if texto_a_narrar else "0 seg")
 
 # ----------------- FUNCIÓN TTS ORIGINAL -----------------
 def text_to_speech(text, tld, lg):
-    # Respeta la función base con soporte para velocidad
     tts = gTTS(text, lang=lg, slow=velocidad)
     try:
-        # Sanitizar nombre para evitar fallos por caracteres especiales
         safe_name = "".join(c for c in text[0:15] if c.isalnum() or c in (' ', '_')).rstrip()
         my_file_name = safe_name if safe_name else "audio"
     except Exception:
@@ -111,19 +137,13 @@ def get_binary_file_downloader_html(bin_file, file_path, file_label='File'):
     href = f'<a style="text-decoration:none; padding:10px 20px; background-color:#FF4B4B; color:white; border-radius:8px; font-weight:bold;" href="data:application/octet-stream;base64,{bin_str}" download="{bin_file}">⬇️ Descargar {file_label}</a>'
     return href
 
-st.markdown("---")
-
 # ----------------- GENERACIÓN DE AUDIO -----------------
-col_btn, col_space = st.columns([1, 2])
-with col_btn:
-    convertir = st.button("🔊 Convertir a Audio", use_container_width=True, type="primary")
-
-if convertir:
-    if not text.strip():
-        st.warning("⚠️ Primero escribe o carga algún texto en la pestaña de edición.")
+if st.button("🔊 Sintetizar Audio", type="primary"):
+    if not texto_a_narrar.strip():
+        st.warning("⚠️ No hay texto seleccionado para convertir a audio.")
     else:
-        with st.spinner("🎧 Sintetizando voz y modulando frecuencias..."):
-            result, output_text = text_to_speech(text, 'com', lg)
+        with st.spinner("🎧 Sintetizando voz y generando archivo sonoro..."):
+            result, output_text = text_to_speech(texto_a_narrar, 'com', lg)
             file_path = f"temp/{result}.mp3"
             
             with open(file_path, "rb") as audio_file:
@@ -131,7 +151,6 @@ if convertir:
 
         st.success("✨ ¡Síntesis completada con éxito!")
         
-        # Reproductor y descarga estilizados
         st.subheader("🔊 Resultado Sonoro:")
         st.audio(audio_bytes, format="audio/mp3", start_time=0)
         
