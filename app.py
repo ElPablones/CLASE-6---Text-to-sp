@@ -28,7 +28,7 @@ with st.sidebar:
     except Exception:
         try:
             image = Image.open('gato_raton.png')
-            st.image(image, caption="Creac. de Interfaces Multimodales. 2026-II", use_container_width=True)
+            st.image(image, caption="2026-II", use_container_width=True)
         except Exception:
             st.info("Coloca 'psicodelico.gif' en tu repo para ver el visualizador.")
 
